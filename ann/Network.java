@@ -2,9 +2,13 @@ package ai.ann;
 import java.util.*;
 
 
+/**
+*	Main body of an Artificial Neural Network
+*/
+
 public class Network implements java.io.Serializable{
 
-	public List<Layer> layers;
+	public List<Layer> layers; 
 	public int n_bias;
 	public ActvFunct f_act;
 
@@ -46,34 +50,14 @@ public class Network implements java.io.Serializable{
 	
 	}
 
-	public Network train(double[][] inputs, double[][] outputs, int epochs, double lr, double mtm){
-
-		for(int i = 0; i < epochs;i++)
-			for(int j = 0; j < inputs.length; j++){
-				
-				this.feed_forward(inputs[j]);
-				this.back_propagate(outputs[j],lr,mtm);
-				
-			}
-
-		return this;
-
-	}
-
-
-	public double[] feed_forward(double[] inputs){
-
-		for(Layer l: this.layers){
-
-			l.set_inputs(inputs);
-			inputs = l.feed_forward(l.get_inputs());
-
-		}
-
-		return this.layers.get(this.layers.size() - 1).get_outputs();
-
-	}
-
+	/**
+	*	Computes the error for each <code>Perceptron</code>
+	*	in the all <code>Layers</code> of the <code>Network</code>
+	* 	then adjusts their weights
+	*	@param target 	Array of target values
+	*	@param lr 		Learning rate
+	*	@param mtm		Momentum
+	*/
 	public void back_propagate(double[] target,double lr,double mtm){
 		
 		double[] o_errors = new double[target.length];
@@ -104,18 +88,53 @@ public class Network implements java.io.Serializable{
 
 	}
 
-	private double[] get_weights_to_next(List<Perceptron> next_l,int index, int size){
+	/**
+	*	Feeds the input into the <code>Network</code>
+	*	then classifies the output
+	*	@param inputs 	Array of inputs
+	*	@return Array of classified outputs 
+	*/
+	public int[] classify(double[] inputs){
 
-		double[] weights = new double[size];
-		for(int i = 0; i < size; i++){
-			Perceptron p = next_l.get(i);
-			weights[i] = p.get_weight_of_input(index);
-		}
+		double[] actual = this.feed_forward(inputs);
+		int[] ret = new int[actual.length];
 
-		return weights;
+		for(int i = 0; i < ret.length; i++)
+			ret[i] = (actual[i] > 0.5)?1:0;
+
+		return ret;
 
 	}
 
+
+	/**
+	*	"Feeds" input into the <code>Network</code> to
+	*	get output(s)
+	*	@param inputs 	Array of inputs
+	* 	@return Computed ouputs
+	*/
+	public double[] feed_forward(double[] inputs){
+
+		for(Layer l: this.layers){
+
+			l.set_inputs(inputs);
+			inputs = l.feed_forward(l.get_inputs());
+
+		}
+
+		return this.layers.get(this.layers.size() - 1).get_outputs();
+
+	}	
+
+
+	/**
+	*	Computes the error value for a <code>Perceptron</code>
+	*	in a Hidden <code>Layer</code>
+	*	@param next_l	List of <code>Perceptrons</code> in next <code>Layer</code>
+	*	@param index 	Index of the target <code>Perceptron</code>
+	*	@param size 	Number of nodes in <code>Layer</code>
+	*	@return Error value for <code>Perceptron</code>
+	*/
 	private double get_error(List<Perceptron> next_l ,int index, int size){
 
 		double errors = 0;
@@ -130,27 +149,45 @@ public class Network implements java.io.Serializable{
 
 	}
 
-	private double[] add_biases(double[] inputs){
-		double[] ret = new double[inputs.length + this.n_bias];
+	/**
+	*	Gets the weights of the edges connected to the node
+	*	@param next_l	List of <code>Perceptrons</code> in next <code>Layer</code>
+	*	@param index 	Index of the target <code>Perceptron</code>
+	*	@param size 	Number of nodes in <code>Layer</code>
+	*	@return Weights of the edges connected to target <code>Perceptron</code>	
+	*/
+	private double[] get_weights_to_next(List<Perceptron> next_l,int index, int size){
 
-		for(int i = 0; i < this.n_bias; i++)
-			ret[i] = 1.0;
+		double[] weights = new double[size];
+		for(int i = 0; i < size; i++){
+			Perceptron p = next_l.get(i);
+			weights[i] = p.get_weight_of_input(index);
+		}
 
-		for(int i = n_bias; i < ret.length; i++ )
-			ret[i] = inputs[i-n_bias];
+		return weights;
 
-		return ret;
 	}
 
-	public int[] classify(double[] inputs){
+	/**
+	*	For training the <code>Network</code>
+	*	@param inputs 	Training set inputs
+	*	@param outputs 	Training set traget outputs
+	*	@param epochs	Number of training sessions
+	*	@param lr 		Learning Rate
+	*	@param mtm 		Momentum
+	*	@return Trained version of the <code>Network</code>
+	*/
+	public Network train(double[][] inputs, double[][] outputs, int epochs, double lr, double mtm){
 
-		double[] actual = this.feed_forward(inputs);
-		int[] ret = new int[actual.length];
+		for(int i = 0; i < epochs;i++)
+			for(int j = 0; j < inputs.length; j++){
+				
+				this.feed_forward(inputs[j]);
+				this.back_propagate(outputs[j],lr,mtm);
+				
+			}
 
-		for(int i = 0; i < ret.length; i++)
-			ret[i] = (actual[i] > 0.5)?1:0;
-
-		return ret;
+		return this;
 
 	}
 
